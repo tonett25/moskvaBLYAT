@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Москва ебать: Часть 2 (Путь с Evchig.com)</title>
+  <style>
+    :root {
+      --bg: #080a12;
+      --accent: #ff4d6d;
+      --gold: #f6c445;
+      --cyan: #38bdf8;
+      --green: #4ade80;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg);
+      color: #fff;
+      font-family: var(--font);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #gameWrapper {
+      position: relative;
+      width: 100vw;
+      max-width: 500px;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: #070912;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    }
+
+    #canvasWrap {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #090b14;
+    }
+
+    /* HUD */
+    .game-hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      background: rgba(12, 15, 26, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      padding: 8px 12px;
+      backdrop-filter: blur(10px);
+      z-index: 15;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .hud-loc {
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hud-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .hud-vibe {
+      color: var(--accent);
+    }
+
+    .hud-loot {
+      color: var(--gold);
+    }
+
+    .mute-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #fff;
+      border-radius: 8px;
+      padding: 3px 7px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Toast notification */
+    #toast {
+      position: absolute;
+      top: 56px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 20, 34, 0.92);
+      border: 1px solid rgba(255, 77, 109, 0.45);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 700;
+      z-index: 18;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      white-space: nowrap;
+      max-width: 92%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      height: 132px;
+      flex-shrink: 0;
+      background: #0c0e18;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 22px 8px;
+      z-index: 20;
+      touch-action: none;
+    }
+
+    .dpad-group {
+      display: flex;
+      gap: 16px;
+    }
+
+    .ctrl-btn {
+      width: 66px;
+      height: 66px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+      touch-action: none;
+    }
+
+    .ctrl-btn.active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.22);
+      border-color: #fff;
+    }
+
+    .action-btn {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff4d6d, #c9184a);
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 900;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      box-shadow: 0 6px 20px rgba(255, 77, 109, 0.45);
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .action-btn span {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .action-btn.active {
+      transform: scale(0.92);
+      background: linear-gradient(135deg, #ff758f, #a4133c);
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(6, 8, 15, 0.86);
+      backdrop-filter: blur(10px);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 390px;
+      background: #161928;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 24px;
+      padding: 20px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+      animation: popIn 0.22s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-emoji {
+      font-size: 38px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--gold);
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .modal-desc {
+      font-size: 13px;
+      color: #d7dcf0;
+      line-height: 1.48;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.045);
+      padding: 12px;
+      border-radius: 14px;
+    }
+
+    .modal-feedback {
+      font-size: 12px;
+      color: #ff8fa3;
+      text-align: center;
+      min-height: 16px;
+      font-weight: 600;
+    }
+
+    .modal-options {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .dialog-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      padding: 12px 14px;
+      color: #f4f6fc;
+      font-size: 13px;
+      line-height: 1.38;
+      text-align: left;
+      font-family: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .dialog-btn:active {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(0.98);
+    }
+
+    .dialog-btn.primary {
+      background: linear-gradient(135deg, #ff4d6d, #c9184a);
+      border-color: rgba(255, 255, 255, 0.25);
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .dialog-btn.btn-wrong {
+      border-color: var(--accent);
+      background: rgba(255, 77, 109, 0.24);
+      animation: shake 0.3s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    /* Final Screen */
+    .firework-btn {
+      background: linear-gradient(135deg, #ff4d6d, #ff758f);
+      border: none;
+      border-radius: 99px;
+      padding: 14px 22px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(255, 77, 109, 0.5);
+      margin: 4px auto 0;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    .photos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .photo-frame {
+      aspect-ratio: 4 / 5;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid rgba(255, 77, 109, 0.45);
+      background: #0d101b;
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    #fxCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 150;
+    }
+  </style>
+</head>
+<body>
+
+<audio id="bgMusic" loop preload="auto">
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<div id="gameWrapper">
+  <div id="canvasWrap">
+    <div class="game-hud">
+      <div class="hud-loc">
+        <span>●</span> <span id="hudLevelName">КГ: Китай-город</span>
+      </div>
+      <div class="hud-right">
+        <span class="hud-loot">🎒 <span id="hudLoot">0/3</span></span>
+        <span class="hud-vibe">💖 <span id="hudVibe">100%</span></span>
+        <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="controls-bar">
+    <div class="dpad-group">
+      <button class="ctrl-btn" id="btnLeft" aria-label="Влево">◀</button>
+      <button class="ctrl-btn" id="btnRight" aria-label="Вправо">▶</button>
+    </div>
+    <button class="action-btn" id="btnJump" aria-label="Прыжок">
+      ▲
+      <span>ПРЫЖОК</span>
+    </button>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+
+  <canvas id="fxCanvas"></canvas>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const canvasWrap = document.getElementById('canvasWrap');
+
+  // Фиксированная логическая высота мира — пол и прыжки одинаковы на любом айфоне
+  const WORLD_H = 360;
+  const FLOOR_Y = 316;
+  let WORLD_W = 360;
+  let RENDER_SCALE = 1;
+
+  function resizeCanvas() {
+    const rect = canvasWrap.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    RENDER_SCALE = canvas.height / WORLD_H;
+    WORLD_W = canvas.width / RENDER_SCALE;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  // Состояние игры
+  const state = {
+    level: 1, // 1: Китай-город, 2: Новые Черёмушки, 3: Москва-Сити
+    vibe: 100,
+    loot: 0,
+    lootTotal: 3,
+    cameraX: 0,
+    keys: { left: false, right: false, jump: false },
+    modalOpen: false,
+    invincible: 0,
+    damageFlash: 0,
+    musicStarted: false,
+    muted: false,
+    tick: 0
+  };
+
+  // Главный герой (в оверсайзе PAINBOY)
+  const player = {
+    x: 50,
+    y: FLOOR_Y - 50,
+    w: 26,
+    h: 50,
+    vx: 0,
+    vy: 0,
+    speed: 3.6,
+    jumpForce: -10.8,
+    grounded: false,
+    facing: 1,
+    safeX: 50,
+    safeY: FLOOR_Y - 50
+  };
+
+  // Ева (Evchig.com) следует за игроком!
+  const eva = {
+    x: 20,
+    y: FLOOR_Y - 48,
+    w: 24,
+    h: 48,
+    facing: 1
+  };
+  let trail = [];
+
+  const GRAVITY = 0.52;
+  let platforms = [];
+  let hazards = [];
+  let pickups = [];
+  let npcs = [];
+  let levelWidth = 1700;
+
+  // Снежинки
+  const snow = Array.from({ length: 42 }, () => ({
+    x: Math.random() * 500,
+    y: Math.random() * WORLD_H,
+    r: Math.random() * 1.8 + 0.8,
+    vy: Math.random() * 0.7 + 0.4,
+    vx: (Math.random() - 0.5) * 0.5
+  }));
+
+  // --- Звук ---
+  let audioCtx = null;
+  function getAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function playTone(freq, type = 'square', dur = 0.09, vol = 0.1) {
+    if (state.muted) return;
+    try {
+      const c = getAudio();
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, c.currentTime);
+      g.gain.setValueAtTime(vol, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+      osc.connect(g);
+      g.connect(c.destination);
+      osc.start();
+      osc.stop(c.currentTime + dur);
+    } catch (e) {}
+  }
+
+  function sfxJump() {
+    playTone(300, 'square', 0.07, 0.08);
+    setTimeout(() => playTone(460, 'square', 0.08, 0.07), 35);
+  }
+  function sfxPickup() {
+    playTone(580, 'sine', 0.07, 0.12);
+    setTimeout(() => playTone(880, 'sine', 0.12, 0.12), 55);
+  }
+  function sfxHurt() {
+    playTone(150, 'sawtooth', 0.18, 0.13);
+  }
+  function sfxWin() {
+    [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => playTone(f, 'triangle', 0.18, 0.12), i * 80));
+  }
+
+  function startMusic() {
+    if (!state.musicStarted && !state.muted) {
+      const m = document.getElementById('bgMusic');
+      if (m) {
+        m.volume = 0.55;
+        m.play().then(() => { state.musicStarted = true; }).catch(() => {});
+      }
+    }
+  }
+
+  function toggleMute() {
+    state.muted = !state.muted;
+    const m = document.getElementById('bgMusic');
+    document.getElementById('muteBtn').innerText = state.muted ? '🔇' : '🔊';
+    if (m) {
+      if (state.muted) m.pause();
+      else m.play().catch(() => {});
+    }
+  }
+
+  // --- Уведомления и урон ---
+  let toastTimer = null;
+  function showToast(text) {
+    const t = document.getElementById('toast');
+    t.innerText = text;
+    t.style.opacity = 1;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.style.opacity = 0; }, 2200);
+  }
+
+  function loseVibe(amount, reason) {
+    sfxHurt();
+    state.vibe = Math.max(10, state.vibe - amount);
+    state.damageFlash = 14;
+    document.getElementById('hudVibe').innerText = state.vibe + '%';
+    if (reason) showToast(reason);
+  }
+
+  function updateLootHUD() {
+    document.getElementById('hudLoot').innerText = `${state.loot}/${state.lootTotal}`;
+  }
+
+  // --- Модалки ---
+  function showModal(html) {
+    state.modalOpen = true;
+    state.keys.left = false;
+    state.keys.right = false;
+    state.keys.jump = false;
+    document.getElementById('btnLeft').classList.remove('active');
+    document.getElementById('btnRight').classList.remove('active');
+    document.getElementById('btnJump').classList.remove('active');
+
+    document.getElementById('modalCard').innerHTML = html;
+    document.getElementById('modalOverlay').style.display = 'flex';
+  }
+
+  function closeModal() {
+    state.modalOpen = false;
+    document.getElementById('modalOverlay').style.display = 'none';
+  }
+
+  // --- Построение уровней ---
+  function setupLevel(lvl, showIntro = false) {
+    state.level = lvl;
+    state.loot = 0;
+    state.invincible = 30;
+    player.x = 65;
+    player.y = FLOOR_Y - player.h;
+    player.vx = 0;
+    player.vy = 0;
+    player.facing = 1;
+    player.safeX = 65;
+    player.safeY = FLOOR_Y - player.h;
+
+    eva.x = 28;
+    eva.y = FLOOR_Y - eva.h;
+    eva.facing = 1;
+    trail = [];
+    state.cameraX = 0;
+
+    if (lvl === 1) {
+      document.getElementById('hudLevelName').innerText = '1. Китай-город (КГ)';
+      levelWidth = 1720;
+
+      platforms = [
+        // Земля с двумя лужами-ямами (разрывы <= 80px)
+        { x: 0, y: FLOOR_Y, w: 410, h: 60, type: 'kg_stone', safe: true },
+        { x: 485, y: FLOOR_Y, w: 460, h: 60, type: 'kg_stone', safe: true },
+        { x: 1025, y: FLOOR_Y, w: 720, h: 60, type: 'kg_stone', safe: true },
+
+        // Надстройки: лавочки, козырьки, ступеньки Ямы
+        { x: 190, y: FLOOR_Y - 56, w: 85, h: 12, type: 'bench' },
+        { x: 310, y: FLOOR_Y - 102, w: 80, h: 12, type: 'awning' },
+        { x: 425, y: FLOOR_Y - 52, w: 60, h: 12, type: 'bench' },
+        { x: 640, y: FLOOR_Y - 62, w: 95, h: 12, type: 'awning' },
+        { x: 840, y: FLOOR_Y - 58, w: 80, h: 12, type: 'bench' },
+        { x: 960, y: FLOOR_Y - 96, w: 78, h: 12, type: 'awning' },
+        { x: 1240, y: FLOOR_Y - 62, w: 95, h: 12, type: 'bench' }
+      ];
+
+      hazards = [
+        // Бешеные самокатчики КГ
+        { x: 560, y: FLOOR_Y - 30, w: 28, h: 30, icon: '🛴', vx: -2.1, minX: 500, maxX: 800, msg: 'Ебучий самокатчик чуть не снёс!' },
+        { x: 1180, y: FLOOR_Y - 30, w: 28, h: 30, icon: '🛴', vx: 2.3, minX: 1060, maxX: 1380, msg: 'Опять Whoosh на 40 км/ч!' },
+        // Реагентная жижа в разрывах
+        { x: 415, y: FLOOR_Y + 6, w: 65, h: 24, icon: '🧪', msg: 'Что это нахуй??' },
+        { x: 950, y: FLOOR_Y + 6, w: 70, h: 24, icon: '🧪', msg: 'Пиздец блять что это!' }
+      ];
+
+      pickups = [
+        { x: 338, y: FLOOR_Y - 134, w: 24, h: 24, icon: '🍫', name: 'Ебейший шоколад для Евы' },
+        { x: 676, y: FLOOR_Y - 94, w: 24, h: 24, icon: '🎧', name: 'Наушники с фортуной' },
+        { x: 1275, y: FLOOR_Y - 94, w: 24, h: 24, icon: '🎟️', name: 'Карта Тройка' }
+      ];
+
+      npcs = [
+        { x: 880, y: FLOOR_Y - 52, w: 30, h: 52, icon: '🎸', label: 'Нефор(долбаеб)из Ямы', triggerDist: 44, triggered: false, trigger: dlgKgNefor },
+        { x: 1540, y: FLOOR_Y - 52, w: 30, h: 52, icon: '☕', label: 'Бариста КГ', triggerDist: 48, triggered: false, trigger: dlgKgBarista }
+      ];
+
+      state.lootTotal = pickups.length;
+      updateLootHUD();
+
+      if (showIntro) {
+        showModal(`
+          <div class="modal-emoji">🌃✨</div>
+          <div class="modal-title">ЧАСТЬ 2: МОСКВА ЕБАТЬ</div>
+          <div class="modal-desc">
+            Ебучий поезд уехал, шалун уехал к болту, а вы с <b>евой</b> наконец-то вдвоём в Москве.<br><br>
+            План ебейший: пройти <b>Китай-город</b>, выжить в <b>Новых Черёмушках</b> и залететь на крышу <b>Москва-Сити</b>. Ева бежит прямо за тобой — не проеби ебейший вайб встречи!
+          </div>
+          <button class="dialog-btn primary" onclick="startMusic(); closeModal();">Погнали гулять ➔</button>
+        `);
+      }
+    }
+
+    else if (lvl === 2) {
+      document.getElementById('hudLevelName').innerText = '2. Новые Черёмушки';
+      levelWidth = 1780;
+
+      platforms = [
+        { x: 0, y: FLOOR_Y, w: 460, h: 60, type: 'snow', safe: true },
+        { x: 540, y: FLOOR_Y, w: 470, h: 60, type: 'snow', safe: true },
+        { x: 1090, y: FLOOR_Y, w: 720, h: 60, type: 'snow', safe: true },
+
+        // Гаражи, козырьки подъездов, лавки
+        { x: 210, y: FLOOR_Y - 58, w: 90, h: 12, type: 'panel_roof' },
+        { x: 350, y: FLOOR_Y - 106, w: 90, h: 12, type: 'panel_roof' },
+        { x: 650, y: FLOOR_Y - 62, w: 95, h: 12, type: 'panel_roof' },
+        { x: 800, y: FLOOR_Y - 110, w: 90, h: 12, type: 'panel_roof' },
+        { x: 1015, y: FLOOR_Y - 58, w: 70, h: 12, type: 'bench' },
+        { x: 1240, y: FLOOR_Y - 64, w: 100, h: 12, type: 'panel_roof' }
+      ];
+
+      hazards = [
+        // Голуби-мутанты (летают туда-сюда)
+        { x: 400, y: FLOOR_Y - 46, w: 26, h: 24, icon: '🕊️', vx: -1.9, minX: 250, maxX: 440, msg: 'Черёмушкинский голубь блять накинулся!' },
+        // Трактор-снегоуборщик
+        { x: 760, y: FLOOR_Y - 34, w: 36, h: 34, icon: '🚜', vx: -1.6, minX: 570, maxX: 900, msg: 'Долбаеб снегоуборщик засыпал с головой!' },
+        // Патрульный голубь у метро
+        { x: 1320, y: FLOOR_Y - 42, w: 26, h: 24, icon: '🕊️', vx: 2.2, minX: 1150, maxX: 1460, msg: 'Голубь пытался спиздить шаурму!!!!' }
+      ];
+
+      pickups = [
+        { x: 382, y: FLOOR_Y - 138, w: 24, h: 24, icon: '🌯', name: 'Шаурма у метро' },
+        { x: 832, y: FLOOR_Y - 142, w: 24, h: 24, icon: '🧤', name: 'Кожа рук арсения для евы' },
+        { x: 1280, y: FLOOR_Y - 96, w: 24, h: 24, icon: '🍵', name: 'Тот самый чай из Аланьи лол ахуеть' }
+      ];
+
+      npcs = [
+        { x: 940, y: FLOOR_Y - 52, w: 30, h: 52, icon: '👵', label: 'Бабка у 3 подъезда', triggerDist: 45, triggered: false, trigger: dlgCheryomushkiBabka },
+        { x: 1600, y: FLOOR_Y - 52, w: 30, h: 52, icon: '🚇', label: 'Метро Черёмушки', triggerDist: 48, triggered: false, trigger: dlgCheryomushkiMetro }
+      ];
+
+      state.lootTotal = pickups.length;
+      updateLootHUD();
+    }
+
+    else if (lvl === 3) {
+      document.getElementById('hudLevelName').innerText = '3. Москва-Сити';
+      levelWidth = 1850;
+
+      platforms = [
+        // Стеклянные мосты между башнями (все разрывы <= 80px)
+        { x: 0, y: FLOOR_Y, w: 360, h: 60, type: 'glass_bridge', safe: true },
+        { x: 435, y: FLOOR_Y - 18, w: 250, h: 18, type: 'glass_bridge', safe: true },
+        { x: 755, y: FLOOR_Y - 36, w: 260, h: 18, type: 'glass_bridge', safe: true },
+        { x: 1090, y: FLOOR_Y - 18, w: 290, h: 18, type: 'glass_bridge', safe: true },
+        { x: 1455, y: FLOOR_Y, w: 420, h: 60, type: 'rooftop', safe: true },
+
+        // Верхние неоновые площадки
+        { x: 220, y: FLOOR_Y - 68, w: 90, h: 12, type: 'neon_plat' },
+        { x: 520, y: FLOOR_Y - 82, w: 90, h: 12, type: 'neon_plat' },
+        { x: 840, y: FLOOR_Y - 102, w: 95, h: 12, type: 'neon_plat' },
+        { x: 1200, y: FLOOR_Y - 84, w: 95, h: 12, type: 'neon_plat' }
+      ];
+
+      hazards = [
+        // Крипто-бро на моноколесе
+        { x: 550, y: FLOOR_Y - 50, w: 28, h: 32, icon: '🛞', vx: -1.8, minX: 445, maxX: 655, msg: 'Моноколёсник(what?)в пиджаке сбил с ног!' },
+        // Тикток-дрон
+        { x: 880, y: FLOOR_Y - 78, w: 26, h: 24, icon: '🚁', vx: 2.0, minX: 765, maxX: 980, msg: 'Дрон вьебался прямо в лоб!' },
+        // Второй дрон
+        { x: 1260, y: FLOOR_Y - 56, w: 26, h: 24, icon: '🚁', vx: -2.2, minX: 1105, maxX: 1350, msg: 'Осторожно, съёмка рилсов инстаграмных додиков' }
+      ];
+
+      pickups = [
+        { x: 252, y: FLOOR_Y - 100, w: 24, h: 24, icon: '💎', name: 'VIP-проходка' },
+        { x: 874, y: FLOOR_Y - 134, w: 24, h: 24, icon: '📸', name: 'Фотка на 17 айфон' },
+        { x: 1234, y: FLOOR_Y - 116, w: 24, h: 24, icon: '💐', name: 'Запасные розы' }
+      ];
+
+      npcs = [
+        { x: 960, y: FLOOR_Y - 88, w: 30, h: 52, icon: '🕶️', label: 'Инфоцыган', triggerDist: 44, triggered: false, trigger: dlgCityCrypto },
+        { x: 1510, y: FLOOR_Y - 52, w: 30, h: 52, icon: '🤵', label: 'Охранник Сити', triggerDist: 44, triggered: false, trigger: dlgCityGuard },
+        { x: 1730, y: FLOOR_Y - 56, w: 36, h: 56, icon: '✨', label: 'СМОТРОВАЯ', triggerDist: 46, triggered: false, trigger: dlgFinalRooftop }
+      ];
+
+      state.lootTotal = pickups.length;
+      updateLootHUD();
+    }
+  }
+
+  // --- КВЕСТЫ И ДИАЛОГИ ---
+
+  function handleAnswer(btn, isRight, feedbackId, wrongMsg, onSuccess) {
+    if (isRight) {
+      sfxPickup();
+      onSuccess();
+    } else {
+      btn.classList.add('btn-wrong');
+      loseVibe(10);
+      const fb = document.getElementById(feedbackId);
+      if (fb) fb.innerText = wrongMsg;
+      setTimeout(() => btn.classList.remove('btn-wrong'), 450);
+    }
+  }
+
+  // КГ 1: Нефор из Ямы
+  function dlgKgNefor() {
+    showModal(`
+      <div class="modal-emoji">🎸</div>
+      <div class="modal-title">Нефор из Ямы (Китай-город)</div>
+      <div class="modal-desc">
+        «Опа, братан в пэинбое! За хаззи шаришь или чисто по форсу? И чё это за муся с тобой идёт?»
+      </div>
+      <div class="modal-feedback" id="fb1"></div>
+      <div class="modal-options">
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb1', 'Ебанат испугалс вас и случайно облил кроссы энергетиком (-10% вайба)', null)">
+          «Я из 7 школы, еблан, ты щас тоже там окажешься»
+       </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, true, 'fb1', '', dlgKgNeforWin)">
+          «Шарим за все, сегодня праймовый вечер,не мешай епта»
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb1', 'Ева закатила глаза: «Я тебя щас реально убью, пошли уже!» (-10% вайба)', null)">
+          «Давай зафристайлимся в Яме на 20 минут заебал»
+        </button>
+      </div>
+    `);
+  }
+
+  function dlgKgNeforWin() {
+    showModal(`
+      <div class="modal-emoji">🤝</div>
+      <div class="modal-title">РЕСПЕКТ ПОЛУЧЕН</div>
+      <div class="modal-desc">
+        Нефор отсосал и показал где лучшее кофе для миллениалов.
+      </div>
+      <button class="dialog-btn primary" onclick="closeModal()">Идти за кофе ➔</button>
+    `);
+  }
+
+  // КГ 2: Бариста
+  function dlgKgBarista() {
+    showModal(`
+      <div class="modal-emoji">☕</div>
+      <div class="modal-title">Модный бариста на Маросейке</div>
+      <div class="modal-desc">
+        «Хэллоу! Два рафа на кокосово-фисташковом молоке — с вас 1850 рублей. Оплата картой, улыбкой или натурой?»
+      </div>
+      <div class="modal-feedback" id="fb2"></div>
+      <div class="modal-options">
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb2', 'Бариста обиделся и нарисовал кривую пенку (-10% вайба)', null)">
+          «Ты совсем конченный ебанат? Это что за цены??»
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb2', 'Охрана кофейни уже напряглась (-10% вайба)', null)">
+          «Послушай салуки вместо оплаты»
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, true, 'fb2', '', dlgKgToCheryomushki)">
+          «Оплачиваю, но ты танцуешь и раздеваешься, фуфло бля»
+        </button>
+      </div>
+    `);
+  }
+
+  function dlgKgToCheryomushki() {
+    sfxWin();
+    showModal(`
+      <div class="modal-emoji">🧡🚇</div>
+      <div class="modal-title">КИТАЙ-ГОРОД ПРОЙДЕН!</div>
+      <div class="modal-desc">
+        Кофе оказался не хуйней и Ева вроде довольна. Вы прыгаете на оранжевую ветку и катите греться в <b>Новые Черёмушки</b>!
+      </div>
+      <button class="dialog-btn primary" onclick="setupLevel(2); closeModal();">Ехать в Новые Черёмушки ➔</button>
+    `);
+  }
+
+  // Черёмушки 1: Бабка у подъезда
+  function dlgCheryomushkiBabka() {
+    showModal(`
+      <div class="modal-emoji">👵</div>
+      <div class="modal-title">Бабка-разведчица у 3 подъезда</div>
+      <div class="modal-desc">
+        «Ага! Хахахахах наркоманы ебаные, звоню мусорам»
+      </div>
+      <div class="modal-feedback" id="fb3"></div>
+      <div class="modal-options">
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb3', 'Бабка пошла в атаку с клюкой, пришлось убегать (-10% вайба)', null)">
+          «ACAB»
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, true, 'fb3', '', dlgBabkaWin)">
+          «Какая закладка, мать? Я на поезде из ебучей вологды сюда приехал, ты ахуела?»
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb3', 'Бабка перекрестилась и запустила в вас треком мэдкида и виллиана (-10% вайба)', null)">
+          «Не мешай, мы снимаем эдит под лавкульт»
+        </button>
+      </div>
+    `);
+  }
+
+  function dlgBabkaWin() {
+    showModal(`
+      <div class="modal-emoji">🫶</div>
+      <div class="modal-title">ДИПЛОМАТИЯ РАЙОНА</div>
+      <div class="modal-desc">
+        «Ладно сорян, ахуенные вы все таки»
+      </div>
+      <button class="dialog-btn primary" onclick="closeModal()">Двигаем к метро ➔</button>
+    `);
+  }
+
+  // Черёмушки 2: Метро
+  function dlgCheryomushkiMetro() {
+    showModal(`
+      <div class="modal-emoji">🚇</div>
+      <div class="modal-title">Метро «Новые Черёмушки»</div>
+      <div class="modal-desc">
+        На Тройке ноль (потому что ты не москвич, ДОЛБАЕБ), айфон держится на 4%. Как врываемся в <b>Москва-Сити</b>?
+      </div>
+      <div class="modal-feedback" id="fb4"></div>
+      <div class="modal-options">
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb4', 'Контролёр оказался мастером спорта, да пошел он к хуям (-10% вайба)', null)">
+          Перепрыгнуть турникет как в 2017 и бежать от контролёра
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb4', 'Букет остался в вазе, лететь не на чем, бля (-10% вайба)', null)">
+          Снова сесть на букет и полететь по воздуху
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, true, 'fb4', '', dlgToMoscowCity)">
+          Пропустить Еву первой, оплатить картой и спокойно пройти
+        </button>
+      </div>
+    `);
+  }
+
+  function dlgToMoscowCity() {
+    sfxWin();
+    showModal(`
+      <div class="modal-emoji">🏙️⚡</div>
+      <div class="modal-title">НОВЫЕ ЧЕРЁМУШКИ ПРОЙДЕНЫ!</div>
+      <div class="modal-desc">
+        Осторожно, двери закрываются! Впереди стеклянные башни и крыша <b>Москва-Сити</b>. Осторожнее на мостах — внизу 80 этажей!
+      </div>
+      <button class="dialog-btn primary" onclick="setupLevel(3); closeModal();">Выходим в Москва-Сити ➔</button>
+    `);
+  }
+
+  // Сити 1: Инфоцыган
+  function dlgCityCrypto() {
+    showModal(`
+      <div class="modal-emoji">🕶️</div>
+      <div class="modal-title">Крипто-инфоцыган у Башни Федерация</div>
+      <div class="modal-desc">
+        «Йоу, бро! Вижу по тебе, что ты не аутист. Нахуй тебе эти свидания, залетай в мою крипто-темку, через неделю купишь всю Вологду»
+      </div>
+      <div class="modal-feedback" id="fb5"></div>
+      <div class="modal-options">
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb5', 'Ева дала тебе подзатыльник: «Ты еблан? Пошли наверх!» (-10% вайба)', null)">
+          «Куда переводить деньги?»
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, true, 'fb5', '', dlgCityCryptoWin)">
+          «Моя инвестиция идет прямо со мной, соси»
+        </button>
+      </div>
+    `);
+  }
+
+  function dlgCityCryptoWin() {
+    showModal(`
+      <div class="modal-emoji">💳</div>
+      <div class="modal-title">ФАКТЫ РАЗНЕСЛИ ИНФОЦЫГАНА</div>
+      <div class="modal-desc">
+        Крипто-бро отсосал, пустил слезу от такого ответа и молча отдал свой золотой VIP-пропуск на закрытую смотровую.
+      </div>
+      <button class="dialog-btn primary" onclick="closeModal()">Идём на смотровую ➔</button>
+    `);
+  }
+
+  // Сити 2: Охранник
+  function dlgCityGuard() {
+    showModal(`
+      <div class="modal-emoji">🤵</div>
+      <div class="modal-title">Охранник крыши Москва-Сити</div>
+      <div class="modal-desc">
+        «Вход закрыт! Наверх пускаем только кай анджела, найнмайса или тех, кто прошёл первую часть и не слился по дороге.»
+      </div>
+      <div class="modal-feedback" id="fb6"></div>
+      <div class="modal-options">
+        <button class="dialog-btn" onclick="handleAnswer(this, false, 'fb6', 'Охранник: «Чё? Иди проспись, молодой» (-10% вайба)', null)">
+          «Я знаю про статую 9mice на крыше, пропусти быстро»
+        </button>
+        <button class="dialog-btn" onclick="handleAnswer(this, true, 'fb6', '', dlgCityGuardWin)">
+          «Я выжил в плацкарте и у меня здесь шутер из Череповца, открой заебал»
+        </button>
+      </div>
+    `);
+  }
+
+  function dlgCityGuardWin() {
+    showModal(`
+      <div class="modal-emoji">🔓</div>
+      <div class="modal-title">ДОСТУП ОТКРЫТ</div>
+      <div class="modal-desc">
+        Охранник молча отдал честь и распахнул двери на самую вершину башни. Пара шагов вперёд — и вся Москва у ваших ног.
+      </div>
+      <button class="dialog-btn primary" onclick="closeModal()">Выйти на крышу ➔</button>
+    `);
+  }
+
+  // ФИНАЛ НА КРЫШЕ МОСКВА-СИТИ
+  function dlgFinalRooftop() {
+    sfxWin();
+    showModal(`
+      <div class="modal-emoji">👧🏻🌃</div>
+      <div class="modal-title" style="color:#ff5277; font-size:19px;">Evchig.com • Вершина Сити</div>
+      <div class="modal-desc" style="font-size:13.5px;">
+        «Ну что...КГ прошли, в Черёмушках не замёрзли, даже на крышу Сити дотащил. Ладно, но убивать тебя сегодня не передумала.Заебал ты меня...<br>
+        <span style="display:block; margin-top:8px; color:#9aa4c2; font-size:12px;">
+          Под вами вся Москва, а вы сливаетесь друг с другом.
+        </span>
+      </div>
+
+      <button class="firework-btn" id="fireworkBtn" onclick="revealFinal()">
+        ✨ зажечь салют над Москвой &lt;3
+      </button>
+
+      <div id="finalReveal" style="display:none; flex-direction:column; align-items:center; text-align:center; gap:9px;">
+        <div style="font-size:21px; font-weight:900; color:#ff4d6d;">«i luv u>»</div>
+        <div style="font-size:13px; color:#e9edf7; line-height:1.45;">
+          Вообще похуй где, главное что с тобой. Другие всё так же неинтересны &lt;3
+        </div>
+
+        <div class="photos-grid">
+          <div class="photo-frame">
+            <img src="photo1.jpg" alt="Мы 1" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=500&auto=format&fit=crop&q=60';">
+          </div>
+          <div class="photo-frame">
+            <img src="photo2.jpg" alt="Мы 2" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=500&auto=format&fit=crop&q=60';">
+          </div>
+        </div>
+
+        <div style="font-size:11px; color:#f6c445; font-weight:800; margin-top:4px; line-height:1.4;">
+          ВАЙБ СВИДАНИЯ: ${state.vibe}% 💖<br>
+          МОСКВА ПРОЙДЕНА • ЕВА ОФИЦИАЛЬНО СУЩЕСТВУЕТ &lt;333
+        </div>
+
+        <button class="dialog-btn" style="text-align:center; margin-top:4px; width:100%;" onclick="location.reload()">
+          Пройти ещё раз ↺
+        </button>
+      </div>
+    `);
+  }
+
+  function revealFinal() {
+    startMusic();
+    sfxWin();
+    startFireworks();
+    const b = document.getElementById('fireworkBtn');
+    const r = document.getElementById('finalReveal');
+    if (b) b.style.display = 'none';
+    if (r) r.style.display = 'flex';
+  }
+
+  // --- ОТРИСОВКА ФОНОВ ---
+  function drawBackground(lvl, camX) {
+    if (lvl === 1) {
+      // 1. Китай-город (вечерний центр, кирпичные арки, огни, Яма)
+      const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+      g.addColorStop(0, '#0d0c1d');
+      g.addColorStop(1, '#26182c');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+      // Исторические здания на параллаксе
+      const px = camX * 0.45;
+      for (let bx = -40; bx < 1400; bx += 190) {
+        const sx = bx - px;
+        if (sx > WORLD_W + 40 || sx + 180 < -40) continue;
+        ctx.fillStyle = '#2d1c2b';
+        ctx.fillRect(sx, 110, 175, FLOOR_Y - 110);
+        // Кирпичные арки
+        ctx.fillStyle = '#18101c';
+        ctx.beginPath();
+        ctx.arc(sx + 87, FLOOR_Y - 25, 34, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(sx + 53, FLOOR_Y - 25, 68, 25);
+        // Тёплые окна
+        ctx.fillStyle = 'rgba(255, 200, 110, 0.45)';
+        for (let wx = 20; wx <= 130; wx += 45) {
+          ctx.fillRect(sx + wx, 138, 22, 32);
+          ctx.fillRect(sx + wx, 190, 22, 32);
+        }
+      }
+
+      // Неоновые вывески КГ
+      const yamaX = 820 - camX;
+      ctx.fillStyle = '#120d1a';
+      ctx.fillRect(yamaX, 130, 130, 32);
+      ctx.strokeStyle = '#ff4d6d';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(yamaX, 130, 130, 32);
+      ctx.fillStyle = '#ff758f';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('КИТАЙ-ГОРОД / ЯМА', yamaX + 6, 150);
+
+      const cafeX = 1480 - camX;
+      ctx.fillStyle = '#111827';
+      ctx.fillRect(cafeX, 135, 118, 30);
+      ctx.strokeStyle = '#f6c445';
+      ctx.strokeRect(cafeX, 135, 118, 30);
+      ctx.fillStyle = '#f6c445';
+      ctx.fillText('☕ РАФ 1850₽', cafeX + 12, 154);
+
+      // Фонари
+      for (let lx = 140; lx < 1650; lx += 250) {
+        const sx = lx - camX;
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillRect(sx, FLOOR_Y - 125, 4, 125);
+        ctx.fillStyle = 'rgba(255, 214, 102, 0.22)';
+        ctx.beginPath();
+        ctx.arc(sx + 2, FLOOR_Y - 128, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fde68a';
+        ctx.fillRect(sx - 3, FLOOR_Y - 131, 10, 6);
+      }
+    }
+
+    else if (lvl === 2) {
+      // 2. Новые Черёмушки (панельки, жёлтые окна, оранжевая буква М)
+      const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+      g.addColorStop(0, '#09101f');
+      g.addColorStop(1, '#1a263e');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+      // Заснеженные 9-этажки на параллаксе
+      const px = camX * 0.4;
+      for (let bx = -20; bx < 1500; bx += 220) {
+        const sx = bx - px;
+        if (sx > WORLD_W + 40 || sx + 190 < -40) continue;
+        ctx.fillStyle = '#1d273b';
+        ctx.fillRect(sx, 55, 185, FLOOR_Y - 55);
+        ctx.fillStyle = '#cbd5e1'; // снег на крыше панельки
+        ctx.fillRect(sx - 2, 52, 189, 5);
+
+        // Светящиеся и тёмные окна
+        for (let row = 0; row < 6; row++) {
+          for (let col = 0; col < 5; col++) {
+            const lit = ((bx + row * 17 + col * 31) % 3) === 0;
+            ctx.fillStyle = lit ? 'rgba(255, 214, 120, 0.55)' : '#111827';
+            ctx.fillRect(sx + 16 + col * 32, 74 + row * 34, 18, 20);
+          }
+        }
+      }
+
+      // Табличка района
+      const signX = 870 - camX;
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(signX, 145, 165, 28);
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(signX, 145, 165, 28);
+      ctx.fillStyle = '#fb923c';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText('НОВЫЕ ЧЕРЁМУШКИ • 3П', signX + 10, 163);
+
+      // Буква М оранжевой ветки в конце уровня
+      const mx = 1595 - camX;
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
+      ctx.beginPath();
+      ctx.arc(mx + 14, 145, 32, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 34px sans-serif';
+      ctx.fillText('M', mx, 158);
+    }
+
+    else if (lvl === 3) {
+      // 3. Москва-Сити (небоскрёбы, неон, огни ночной Москвы далеко внизу)
+      const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+      g.addColorStop(0, '#040611');
+      g.addColorStop(0.7, '#10152e');
+      g.addColorStop(1, '#1e1638');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+      // Звёзды
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      for (let i = 0; i < 24; i++) {
+        const sx = (i * 97) % WORLD_W;
+        const sy = (i * 53) % 140;
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+
+      // Небоскрёбы Сити на параллаксе
+      const px = camX * 0.32;
+      const towers = [
+        { x: 20, w: 95, h: 310, col: '#131d38', neon: '#38bdf8' },
+        { x: 145, w: 120, h: 340, col: '#181f3d', neon: '#ff4d6d' },
+        { x: 300, w: 85, h: 280, col: '#121933', neon: '#a855f7' },
+        { x: 420, w: 130, h: 350, col: '#172342', neon: '#38bdf8' },
+        { x: 590, w: 100, h: 300, col: '#1a1e38', neon: '#f43f5e' },
+        { x: 730, w: 125, h: 335, col: '#14203b', neon: '#38bdf8' }
+      ];
+
+      for (const t of towers) {
+        const sx = t.x - px;
+        ctx.fillStyle = t.col;
+        ctx.fillRect(sx, WORLD_H - t.h, t.w, t.h);
+        // Вертикальная неоновая подсветка грани
+        ctx.fillStyle = t.neon;
+        ctx.fillRect(sx, WORLD_H - t.h, 2, t.h);
+        ctx.fillRect(sx + t.w - 2, WORLD_H - t.h, 2, t.h);
+        // Мигающий маячок на крыше
+        if (Math.floor(state.tick / 30) % 2 === 0) {
+          ctx.fillStyle = '#ff1a1a';
+          ctx.fillRect(sx + t.w / 2 - 2, WORLD_H - t.h - 10, 4, 4);
+        }
+        // Сетка стеклянных окон
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.14)';
+        for (let wy = WORLD_H - t.h + 14; wy < WORLD_H; wy += 16) {
+          ctx.fillRect(sx + 8, wy, t.w - 16, 4);
+        }
+      }
+
+      // Надпись Москва-Сити
+      const cityX = 1665 - camX;
+      ctx.fillStyle = 'rgba(255, 77, 109, 0.2)';
+      ctx.beginPath();
+      ctx.arc(cityX + 75, FLOOR_Y - 75, 48, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ff758f';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('✨ СМОТРОВАЯ 89 ЭТАЖ', cityX, FLOOR_Y - 125);
+    }
+
+    // Падающий снег поверх фона
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+    for (const f of snow) {
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // --- ОТРИСОВКА ПЕРСОНАЖЕЙ ---
+
+  // Ева (Evchig.com)
+  function drawEva(camX) {
+    const sx = eva.x - camX;
+    const sy = eva.y;
+    ctx.save();
+    ctx.translate(sx + eva.w / 2, sy + eva.h / 2);
+    if (eva.facing < 0) ctx.scale(-1, 1);
+
+    // Длинные тёмные волосы
+    ctx.fillStyle = '#18141c';
+    ctx.fillRect(-9, -24, 18, 22);
+    // Лицо
+    ctx.fillStyle = '#ffe0cc';
+    ctx.fillRect(-6, -18, 12, 10);
+    // Глаз и румянец
+    ctx.fillStyle = '#111';
+    ctx.fillRect(1, -15, 2.5, 2.5);
+    ctx.fillStyle = 'rgba(255, 77, 109, 0.45)';
+    ctx.fillRect(0, -11, 3, 2);
+
+    // Стильная куртка / худи
+    ctx.fillStyle = '#e11d48';
+    ctx.fillRect(-10, -8, 20, 20);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-4, -3, 8, 2);
+
+    // Брюки и ботинки
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-8, 12, 6, 10);
+    ctx.fillRect(2, 12, 6, 10);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-9, 21, 7, 3);
+    ctx.fillRect(2, 21, 7, 3);
+
+    ctx.restore();
+
+    // Подпись Evchig.com над головой
+    ctx.fillStyle = '#ff8fa3';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Evchig.com', sx + eva.w / 2, sy - 6);
+    ctx.textAlign = 'left';
+  }
+
+  // Главный герой в точном мерче PAINBOY
+  function drawPlayer(camX) {
+    if (state.invincible > 0 && Math.floor(state.invincible / 4) % 2 === 0) return;
+
+    const sx = player.x - camX;
+    const sy = player.y;
+    const dir = player.facing;
+
+    ctx.save();
+    ctx.translate(sx + player.w / 2, sy + player.h / 2);
+    if (dir < 0) ctx.scale(-1, 1);
+
+    // Волосы и лицо
+    ctx.fillStyle = '#18181b';
+    ctx.fillRect(-8, -25, 16, 13);
+    ctx.fillStyle = '#ffd1b3';
+    ctx.fillRect(-6, -18, 12, 10);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(1, -15, 2.5, 2.5);
+
+    // Чёрная оверсайз футболка PAINBOY
+    ctx.fillStyle = '#101114';
+    ctx.fillRect(-12, -8, 24, 22);
+    ctx.fillRect(-15, -8, 5, 10);
+    ctx.fillRect(10, -8, 5, 10);
+
+    // Принт: спина (заяц-панк со швами) / перед (PAINBOY.)
+    if (dir > 0) {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-1, 2, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-4, -1);
+      ctx.lineTo(-8, -6);
+      ctx.lineTo(-3, -4);
+      ctx.lineTo(-1, -8);
+      ctx.lineTo(2, -4);
+      ctx.lineTo(6, -6);
+      ctx.lineTo(3, -1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#101114';
+      ctx.fillRect(-2, 0, 1.5, 4);
+      ctx.fillRect(-3.5, 1.5, 5, 1.5);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-3.5, 6.5, 2.5, 1.8);
+      ctx.fillRect(0, 6.5, 2.5, 1.8);
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 5px monospace';
+      ctx.fillText('PAINBOY.', -11, 4);
+    }
+
+    // Джинсы и кроссовки
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-9, 14, 7, 10);
+    ctx.fillRect(2, 14, 7, 10);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-10, 23, 8, 3);
+    ctx.fillRect(2, 23, 8, 3);
+
+    ctx.restore();
+  }
+
+  // --- ИГРОВОЙ ЦИКЛ ---
+  function update() {
+    state.tick++;
+
+    // Анимация снега
+    for (const f of snow) {
+      f.y += f.vy;
+      f.x += f.vx;
+      if (f.y > WORLD_H) { f.y = -4; f.x = Math.random() * WORLD_W; }
+      if (f.x < 0) f.x = WORLD_W;
+      if (f.x > WORLD_W) f.x = 0;
+    }
+
+    if (state.damageFlash > 0) state.damageFlash--;
+    if (state.modalOpen) return;
+    if (state.invincible > 0) state.invincible--;
+
+    // Движение игрока
+    if (state.keys.left) {
+      player.vx = -player.speed;
+      player.facing = -1;
+      startMusic();
+    } else if (state.keys.right) {
+      player.vx = player.speed;
+      player.facing = 1;
+      startMusic();
+    } else {
+      player.vx = 0;
+    }
+
+    if (state.keys.jump && player.grounded) {
+      player.vy = player.jumpForce;
+      player.grounded = false;
+      sfxJump();
+      startMusic();
+    }
+
+    player.vy += GRAVITY;
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // Границы уровня
+    if (player.x < 8) player.x = 8;
+    if (player.x > levelWidth - player.w - 8) player.x = levelWidth - player.w - 8;
+
+    // Коллизии с платформами
+    player.grounded = false;
+    for (const plat of platforms) {
+      if (
+        player.x + player.w - 4 > plat.x &&
+        player.x + 4 < plat.x + plat.w &&
+        player.y + player.h >= plat.y &&
+        player.y + player.h <= plat.y + 18 &&
+        player.vy >= 0
+      ) {
+        player.y = plat.y - player.h;
+        player.vy = 0;
+        player.grounded = true;
+        if (plat.safe && player.x > plat.x + 16 && player.x < plat.x + plat.w - 40) {
+          player.safeX = player.x;
+          player.safeY = player.y;
+        }
+      }
+    }
+
+    // Падение в пропасть / яму
+    if (player.y > WORLD_H + 35) {
+      loseVibe(10, state.level === 3 ? 'Сорвались со стеклянного моста! (-10%)' : 'Провалились в яму! (-10%)');
+      player.x = player.safeX;
+      player.y = player.safeY - 10;
+      player.vy = 0;
+      state.invincible = 60;
+      eva.x = Math.max(8, player.x - 30);
+      eva.y = player.y + 2;
+      trail = [];
+    }
+
+    // Движение Евы по следу игрока
+    const lastT = trail[trail.length - 1];
+    if (!lastT || Math.hypot(player.x - lastT.x, player.y - lastT.y) > 2) {
+      trail.push({ x: player.x, y: player.y + 2, facing: player.facing });
+      if (trail.length > 18) trail.shift();
+    }
+    if (trail.length >= 12) {
+      const target = trail[0];
+      eva.x += (target.x - eva.x) * 0.25;
+      eva.y += (target.y - eva.y) * 0.25;
+      eva.facing = target.facing;
+    }
+
+    // Движение опасностей и урон
+    for (const h of hazards) {
+      if (h.vx) {
+        h.x += h.vx;
+        if (h.x <= h.minX || h.x >= h.maxX) h.vx *= -1;
+      }
+
+      if (
+        state.invincible === 0 &&
+        player.x + player.w - 4 > h.x &&
+        player.x + 4 < h.x + h.w &&
+        player.y + player.h - 4 > h.y &&
+        player.y + 6 < h.y + h.h
+      ) {
+        loseVibe(10, h.msg);
+        player.vy = -6.5;
+        state.invincible = 55;
+        break;
+      }
+    }
+
+    // Сбор предметов
+    for (let i = pickups.length - 1; i >= 0; i--) {
+      const it = pickups[i];
+      if (
+        player.x + player.w > it.x &&
+        player.x < it.x + it.w &&
+        player.y + player.h > it.y &&
+        player.y < it.y + it.h
+      ) {
+        sfxPickup();
+        state.loot++;
+        updateLootHUD();
+        showToast(`Найдено: ${it.icon} ${it.name}`);
+        pickups.splice(i, 1);
+      }
+    }
+
+    // Триггеры NPC и квестов
+    for (const n of npcs) {
+      if (n.triggered) continue;
+      const dist = Math.abs((player.x + player.w / 2) - (n.x + n.w / 2));
+      if (dist < n.triggerDist && Math.abs(player.y - n.y) < 55) {
+        n.triggered = true;
+        n.trigger();
+        break;
+      }
+    }
+
+    // Камера
+    const targetCam = player.x - WORLD_W * 0.36;
+    state.cameraX += (targetCam - state.cameraX) * 0.12;
+    if (state.cameraX < 0) state.cameraX = 0;
+    if (state.cameraX > levelWidth - WORLD_W) state.cameraX = Math.max(0, levelWidth - WORLD_W);
+  }
+
+  function render() {
+    ctx.save();
+    ctx.scale(RENDER_SCALE, RENDER_SCALE);
+    ctx.clearRect(0, 0, WORLD_W, WORLD_H);
+
+    // Фон
+    drawBackground(state.level, state.cameraX);
+
+    // Платформы
+    for (const plat of platforms) {
+      const sx = plat.x - state.cameraX;
+      if (sx > WORLD_W + 40 || sx + plat.w < -40) continue;
+
+      if (plat.type === 'kg_stone') {
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(sx, plat.y, plat.w, 8);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx, plat.y + 8, plat.w, plat.h - 8);
+      } else if (plat.type === 'snow') {
+        ctx.fillStyle = '#f1f5f9';
+        ctx.fillRect(sx, plat.y, plat.w, 8);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx, plat.y + 8, plat.w, plat.h - 8);
+      } else if (plat.type === 'glass_bridge') {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.fillRect(sx, plat.y, plat.w, plat.h);
+        ctx.fillStyle = '#7dd3fc';
+        ctx.fillRect(sx, plat.y, plat.w, 3);
+      } else if (plat.type === 'rooftop') {
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fillRect(sx, plat.y, plat.w, plat.h);
+        ctx.fillStyle = '#ff4d6d';
+        ctx.fillRect(sx, plat.y, plat.w, 3);
+      } else if (plat.type === 'neon_plat') {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx, plat.y, plat.w, plat.h);
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(sx, plat.y, plat.w, 3);
+      } else if (plat.type === 'awning') {
+        ctx.fillStyle = '#be123c';
+        ctx.fillRect(sx, plat.y, plat.w, plat.h);
+        ctx.fillStyle = '#fda4af';
+        ctx.fillRect(sx, plat.y, plat.w, 3);
+      } else {
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(sx, plat.y, plat.w, plat.h);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(sx, plat.y, plat.w, 3);
+      }
+    }
+
+    // Предметы (с лёгким парением)
+    const bob = Math.sin(state.tick * 0.1) * 3;
+    ctx.font = '20px sans-serif';
+    for (const it of pickups) {
+      const sx = it.x - state.cameraX;
+      ctx.fillText(it.icon, sx, it.y + 18 + bob);
+    }
+
+    // Опасности
+    ctx.font = '24px sans-serif';
+    for (const h of hazards) {
+      const sx = h.x - state.cameraX;
+      ctx.fillText(h.icon, sx, h.y + h.h - 2);
+    }
+
+    // NPC и маркеры
+    for (const n of npcs) {
+      const sx = n.x - state.cameraX;
+      ctx.font = '28px sans-serif';
+      ctx.fillText(n.icon, sx, n.y + 42);
+      if (!n.triggered) {
+        ctx.fillStyle = '#f6c445';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.label, sx + 14, n.y + 6 + Math.sin(state.tick * 0.12) * 2);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    // Ева и главный герой
+    drawEva(state.cameraX);
+    drawPlayer(state.cameraX);
+
+    // Вспышка при потере вайба
+    if (state.damageFlash > 0) {
+      ctx.fillStyle = `rgba(255, 77, 109, ${state.damageFlash * 0.025})`;
+      ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    }
+
+    ctx.restore();
+    requestAnimationFrame(loop);
+  }
+
+  function loop() {
+    update();
+    render();
+  }
+
+  // --- УПРАВЛЕНИЕ (Мультитач для iOS + Клавиатура) ---
+  function bindControl(id, onDown, onUp) {
+    const el = document.getElementById(id);
+    const down = (e) => { e.preventDefault(); onDown(); el.classList.add('active'); };
+    const up = (e) => { e.preventDefault(); onUp(); el.classList.remove('active'); };
+
+    el.addEventListener('touchstart', down, { passive: false });
+    el.addEventListener('touchend', up, { passive: false });
+    el.addEventListener('touchcancel', up, { passive: false });
+    el.addEventListener('mousedown', down);
+    el.addEventListener('mouseup', up);
+    el.addEventListener('mouseleave', up);
+  }
+
+  bindControl('btnLeft', () => { state.keys.left = true; }, () => { state.keys.left = false; });
+  bindControl('btnRight', () => { state.keys.right = true; }, () => { state.keys.right = false; });
+  bindControl('btnJump', () => { state.keys.jump = true; }, () => { state.keys.jump = false; });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.left = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.right = true;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') state.keys.jump = true;
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.left = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.right = false;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') state.keys.jump = false;
+  });
+
+  // --- САЛЮТ В ФИНАЛЕ ---
+  function startFireworks() {
+    const c = document.getElementById('fxCanvas');
+    const fc = c.getContext('2d');
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+
+    const sparks = [];
+    const palette = ['#ff4d6d', '#ff8fa3', '#f6c445', '#38bdf8', '#c084fc', '#ffffff'];
+
+    function spawnBurst(cx, cy) {
+      const col = palette[Math.floor(Math.random() * palette.length)];
+      for (let i = 0; i < 38; i++) {
+        const ang = (Math.PI * 2 * i) / 38 + (Math.random() * 0.2);
+        const spd = Math.random() * 6 + 2;
+        sparks.push({
+          x: cx, y: cy,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          life: 1,
+          col,
+          size: Math.random() * 3.5 + 2
+        });
+      }
+    }
+
+    spawnBurst(c.width * 0.3, c.height * 0.28);
+    setTimeout(() => spawnBurst(c.width * 0.72, c.height * 0.24), 320);
+    setTimeout(() => spawnBurst(c.width * 0.5, c.height * 0.36), 650);
+    setTimeout(() => spawnBurst(c.width * 0.25, c.height * 0.45), 1000);
+    setTimeout(() => spawnBurst(c.width * 0.78, c.height * 0.42), 1300);
+
+    let frames = 0;
+    function anim() {
+      fc.clearRect(0, 0, c.width, c.height);
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += 0.08;
+        s.vx *= 0.985;
+        s.life -= 0.014;
+        if (s.life <= 0) {
+          sparks.splice(i, 1);
+          continue;
+        }
+        fc.globalAlpha = s.life;
+        fc.fillStyle = s.col;
+        fc.beginPath();
+        fc.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        fc.fill();
+      }
+      fc.globalAlpha = 1;
+      frames++;
+      if (frames < 260 || sparks.length > 0) requestAnimationFrame(anim);
+      else fc.clearRect(0, 0, c.width, c.height);
+    }
+    anim();
+  }
+
+  // Запуск
+  setupLevel(1, true);
+  requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
